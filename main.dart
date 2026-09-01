@@ -161,7 +161,8 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
     });
 
     try {
-   var uri = Uri.parse('https://opulent-space-adventure-4rwxjw64599pc5pwr-8000.app.github.dev/predict');
+  var uri = Uri.parse('https://opulent-space-adventure-4rwxjw64599pc5pwr-5000.app.github.dev/predict');
+
       var request = http.MultipartRequest('POST', uri);
       request.files.add(
         http.MultipartFile.fromBytes('file', bytes, filename: 'coffee_leaf.jpg'),
