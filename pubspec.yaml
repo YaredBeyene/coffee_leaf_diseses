@@ -1,23 +1,21 @@
 name: coffee_disease_app
-description: "A new Flutter project."
+description: "A new Flutter project for Coffee Disease Detection."
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.13.1
+  sdk: ^3.5.0
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  image_picker: ^1.2.3
-  http: ^1.2.0        # <--- ይህንን እዚህ ውስጥ ጨምሬዋለሁ
+  http: ^1.2.0
+  image_picker: ^1.0.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true
