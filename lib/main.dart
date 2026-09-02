@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 
-ValueNotifier<List<Map<String, String>>> scanHistoryNotifier = ValueNotifier([]);
-
 void main() {
   runApp(const CoffeeDiseaseApp());
 }
+
+final ValueNotifier<List<Map<String, String>>> scanHistoryNotifier = ValueNotifier([]);
 
 class CoffeeDiseaseApp extends StatelessWidget {
   const CoffeeDiseaseApp({super.key});
@@ -16,11 +16,10 @@ class CoffeeDiseaseApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Coffee Leaf Disease Detector & Expert Platform',
+      title: 'Coffee Leaf Analytics Platform',
       theme: ThemeData(
         primarySwatch: Colors.green,
-        scaffoldBackgroundColor: Colors.grey,
-        fontFamily: 'Roboto',
+        scaffoldBackgroundColor: Colors.grey[200],
       ),
       home: const MainNavigationScreen(),
       debugShowCheckedModeBanner: false,
@@ -54,7 +53,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
-        iconSize: 28,
+        iconSize: 26,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
@@ -99,12 +98,6 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
 
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
-      
-      if (bytes.length < 1000) {
-        _triggerWarningAlert("Image quality error: Blurry or dark exposure detected. Please snap a clearer photo.");
-        return;
-      }
-
       setState(() {
         _imageBytes = bytes;
         _showGradCamHeatmap = false;
@@ -114,7 +107,6 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
         _economicLossText = '';
         _gpsLabelText = "Geo-Tag Logged: Lat: 9.6833, Lng: 39.5333 (Debre Berhan Area)";
       });
-
       _sendImageToBackend(bytes);
     }
   }
@@ -194,7 +186,7 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
     scanHistoryNotifier.value = List.from(scanHistoryNotifier.value)
       ..add({
         'title': detectedClass,
-        'date': DateTime.now().toString().split('.'),
+        'date': DateTime.now().toString().split('.').first,
         'loss': loss,
         'severity': severity,
         'gps': _gpsLabelText,
@@ -218,13 +210,13 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
                   child: _imageBytes != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(14),
-                          child: ColorFiltered(
-                            colorFilter: ColorFilter.mode(
-                              _showGradCamHeatmap ? Colors.red.withOpacity(0.4) : Colors.transparent, 
-                              BlendMode.colorBurn
-                            ),
-                            child: Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
-                          ),
+                          child: _showGradCamHeatmap
+                              ? ShaderMask(
+                                  shaderCallback: (bounds) => const LinearGradient(colors: [Colors.red, Colors.yellow]).createShader(bounds),
+                                  blendMode: BlendMode.colorBurn,
+                                  child: Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
+                                )
+                              : Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
                         )
                       : const Center(child: Text('Insert Coffee Leaf Profile Image Here', style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.bold))),
                 ),
@@ -243,9 +235,11 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.blue.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: Colors.blue[100], borderRadius: BorderRadius.circular(8)),
               child: Row(children: [const Icon(Icons.location_on, color: Colors.blue), const SizedBox(width: 8), Text(_gpsLabelText, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))]),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () => _pickImage(ImageSource.gallery),
+              icon: const Icon(Icons.photo_library, color: Colors.white),
+
