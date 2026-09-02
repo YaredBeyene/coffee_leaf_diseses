@@ -17,10 +17,7 @@ class CoffeeDiseaseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Coffee Leaf Analytics Platform',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        scaffoldBackgroundColor: Colors.grey[200],
-      ),
+      theme: ThemeData(primarySwatch: Colors.green),
       home: const MainNavigationScreen(),
       debugShowCheckedModeBanner: false,
     );
@@ -29,14 +26,12 @@ class CoffeeDiseaseApp extends StatelessWidget {
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
-
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-
   final List<Widget> _screens = [
     const CoffeeScannerScreen(),
     const CoffeeChatbotScreen(),
@@ -53,12 +48,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
-        iconSize: 26,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.center_focus_strong), label: 'Detector'),
           BottomNavigationBarItem(icon: Icon(Icons.psychology), label: 'Expert Chat'),
@@ -72,7 +62,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
 class CoffeeScannerScreen extends StatefulWidget {
   const CoffeeScannerScreen({super.key});
-
   @override
   State<CoffeeScannerScreen> createState() => _CoffeeScannerScreenState();
 }
@@ -89,13 +78,7 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: source,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 80,
-    );
-
+    final pickedFile = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800);
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
       setState(() {
@@ -111,27 +94,12 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
     }
   }
 
-  void _triggerWarningAlert(String alertMessage) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(children: [Icon(Icons.warning, color: Colors.red), SizedBox(width: 8), Text("Validation Alert")]),
-        content: Text(alertMessage),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))],
-      ),
-    );
-  }
-
   Future<void> _sendImageToBackend(Uint8List bytes) async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       var uri = Uri.parse('https://github.dev');
       var request = http.MultipartRequest('POST', uri);
       request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: 'coffee_leaf.jpg'));
-
       var response = await request.send();
       if (response.statusCode == 200) {
         var responseData = await response.stream.bytesToString();
@@ -143,37 +111,22 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
     } catch (e) {
       _processAgronomicOutput('Rust', '95.8');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   void _processAgronomicOutput(String detectedClass, String confidence) {
     String remedy = '';
     String severity = 'Moderate';
-    String loss = 'Estimated Yield Loss: ~20% - 30%';
+    String loss = 'Estimated Yield Loss: ~30%';
 
     if (detectedClass.toLowerCase().contains('rust')) {
       remedy = 'Jimma Agricultural Research Center (JARC) Guideline: Apply copper-based systemic fungicides instantly. Prune structural canopy layers to drop field humidity and prioritize certified robust Arabica variants (e.g., JARC 741).';
       severity = 'High Severity';
-      loss = 'Warning: Untreated Leaf Rust threatens up to a 30% reduction in total coffee crop volume this season.';
-    } else if (detectedClass.toLowerCase().contains('cercospora')) {
-      remedy = 'JARC Guideline: Counter balance nitrogen levels using potassium layer blends, space out shade tree configurations, and systematically burn active canopy litter metrics.';
-      severity = 'Moderate';
-      loss = 'Warning: Untreated Cercospora Leaf Spot drops overall seasonal bean matrix profiles by ~15%.';
-    } else if (detectedClass.toLowerCase().contains('miner')) {
-      remedy = 'JARC Guideline: Introduce biological control vectors, isolate compromised foliage branches immediately, and scale structural organic insecticide applications.';
-      severity = 'High Severity';
-      loss = 'Warning: Uncontrolled Leaf Miner vectors cause heavy deflation patterns of up to 25% yield damage.';
-    } else if (detectedClass.toLowerCase().contains('phoma')) {
-      remedy = 'JARC Directive: Cut out brittle structural canopy nodes, plant windbreak forestry protections, and secure early protective chemical barriers.';
-      severity = 'Mild';
-      loss = 'Warning: Phoma vectors threaten peripheral branch structures, causing ~10% operational leaf loss.';
     } else {
-      remedy = 'No pathogens identified. Maintain routine sanitation protocols and observe field humidity markers.';
+      remedy = 'Maintain routine field sanitation protocols and check environmental moisture levels regularly.';
       severity = 'Clear / Healthy';
-      loss = 'Economic Yield Loss Risk: 0%';
+      loss = 'Estimated Yield Loss: 0%';
     }
 
     setState(() {
@@ -184,13 +137,7 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
     });
 
     scanHistoryNotifier.value = List.from(scanHistoryNotifier.value)
-      ..add({
-        'title': detectedClass,
-        'date': DateTime.now().toString().split('.').first,
-        'loss': loss,
-        'severity': severity,
-        'gps': _gpsLabelText,
-      });
+      ..add({'title': detectedClass, 'loss': loss, 'severity': severity, 'gps': _gpsLabelText});
   }
 
   @override
@@ -211,11 +158,7 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(14),
                           child: _showGradCamHeatmap
-                              ? ShaderMask(
-                                  shaderCallback: (bounds) => const LinearGradient(colors: [Colors.red, Colors.yellow]).createShader(bounds),
-                                  blendMode: BlendMode.colorBurn,
-                                  child: Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
-                                )
+                              ? ColorFiltered(colorFilter: const ColorFilter.mode(Colors.red, BlendMode.colorBurn), child: Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity))
                               : Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
                         )
                       : const Center(child: Text('Insert Coffee Leaf Profile Image Here', style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.bold))),
@@ -227,7 +170,6 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
                       onPressed: () => setState(() => _showGradCamHeatmap = !_showGradCamHeatmap),
                       icon: const Icon(Icons.visibility, size: 16),
                       label: Text(_showGradCamHeatmap ? "Hide Grad-CAM" : "Grad-CAM XAI"),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black.withOpacity(0.7), foregroundColor: Colors.white),
                     ),
                   )
               ],
@@ -235,11 +177,61 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.blue[100], borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
               child: Row(children: [const Icon(Icons.location_on, color: Colors.blue), const SizedBox(width: 8), Text(_gpsLabelText, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))]),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () => _pickImage(ImageSource.gallery),
               icon: const Icon(Icons.photo_library, color: Colors.white),
+              label: const Text('Capture / Process Leaf Frame', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 14)),
+            ),
+            if (_isLoading) ...[const SizedBox(height: 25), const Center(child: CircularProgressIndicator())],
+            if (_resultText.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.between,
+                        children: [
+                          Expanded(child: Text(_resultText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
+                          IconButton(icon: const Icon(Icons.volume_up, color: Colors.blue), onPressed: () {})
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_severityText, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.orange)),
+                      Text(_economicLossText, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red)),
+                      const Divider(height: 20),
+                      const Text('Actionable Treatment Framework (JARC Base):', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                      const SizedBox(height: 5),
+                      Text(_remedyText, style: const TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CoffeeChatbotScreen extends StatelessWidget {
+  const CoffeeChatbotScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Expert Consultation Desk'), backgroundColor: Colors.green, foregroundColor: Colors.white),
+      body: const Center(child: Text('Connected to Coffee Extension Support Desk.', style: TextStyle(fontSize: 16))),
+    );
+  }
+}
+
 
