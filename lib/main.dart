@@ -249,3 +249,4 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () => _pickImage(ImageSource.gallery),
+
