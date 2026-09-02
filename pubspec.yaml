@@ -11,8 +11,8 @@ dependencies:
     sdk: flutter
   http: ^1.2.2
   image_picker: ^1.1.2
-  geolocator: ^13.0.1  # Maps your structural GPS coordinate hardware tags
-  flutter_tts: ^4.1.0  # Powers your text to speech audio readout speaker loops
+  geolocator: ^13.0.1
+  flutter_tts: ^4.1.0
 
 dev_dependencies:
   flutter_test:
