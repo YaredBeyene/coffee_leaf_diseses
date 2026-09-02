@@ -1,5 +1,5 @@
 name: coffee_disease_app
-description: "A new Flutter project for Coffee Disease Detection."
+description: "An advanced Flutter project for Coffee Leaf Disease Detection with JARC protocols."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   http: ^1.2.2
   image_picker: ^1.1.2
+  geolocator: ^13.0.1  # Maps your structural GPS coordinate hardware tags
+  flutter_tts: ^4.1.0  # Powers your text to speech audio readout speaker loops
 
 dev_dependencies:
   flutter_test:
@@ -19,3 +21,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
