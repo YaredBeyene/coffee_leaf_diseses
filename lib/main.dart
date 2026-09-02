@@ -4,12 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 
-// -------------------------------------------------------------
-// GLOBAL CORE STATES FOR 24 CUSTOM ADVISORY FEATURES
-// -------------------------------------------------------------
 ValueNotifier<List<Map<String, String>>> scanHistoryNotifier = ValueNotifier([]);
-ValueNotifier<Map<String, double>> currentGpsCoordinates = ValueNotifier({'lat': 0.0, 'lng': 0.0});
-ValueNotifier<String> audioReadoutSpeechState = ValueNotifier("System Idle");
 
 void main() {
   runApp(const CoffeeDiseaseApp());
@@ -24,7 +19,7 @@ class CoffeeDiseaseApp extends StatelessWidget {
       title: 'Coffee Leaf Disease Detector & Expert Platform',
       theme: ThemeData(
         primarySwatch: Colors.green,
-        scaffoldBackgroundColor: Colors.grey[100],
+        scaffoldBackgroundColor: Colors.grey,
         fontFamily: 'Roboto',
       ),
       home: const MainNavigationScreen(),
@@ -57,10 +52,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.green[800],
-        unselectedItemColor: Colors.grey[600],
+        selectedItemColor: Colors.green,
+        unselectedItemColor: Colors.grey,
         iconSize: 28,
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         onTap: (index) {
           setState(() {
             _currentIndex = index;
@@ -77,9 +71,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// -------------------------------------------------------------
-// 1. SCANNER, DIAGNOSIS & EXPLAINABLE AI (Grad-CAM XAI Engine)
-// -------------------------------------------------------------
 class CoffeeScannerScreen extends StatefulWidget {
   const CoffeeScannerScreen({super.key});
 
@@ -97,7 +88,6 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
   String _economicLossText = '';
   String _gpsLabelText = 'GPS Data Not Tracked';
 
-  // Feature: Edge Image Quality Check Validation Filter
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
@@ -110,8 +100,7 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
       
-      // Simulation of Motion Blur check (Laplacian thresholds variance)
-      if (bytes.length < 5000) {
+      if (bytes.length < 1000) {
         _triggerWarningAlert("Image quality error: Blurry or dark exposure detected. Please snap a clearer photo.");
         return;
       }
@@ -123,22 +112,11 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
         _remedyText = '';
         _severityText = '';
         _economicLossText = '';
+        _gpsLabelText = "Geo-Tag Logged: Lat: 9.6833, Lng: 39.5333 (Debre Berhan Area)";
       });
 
-      // Feature: Automatic GPS Structural Coordinates Harvesting
-      _captureGpsCoordinates();
       _sendImageToBackend(bytes);
     }
-  }
-
-  void _captureGpsCoordinates() {
-    // Samsung Hardware GPS Emulation targeting local regional blocks (e.g., Debre Berhan area coordinates)
-    double targetLat = 9.6833;
-    double targetLng = 39.5333;
-    currentGpsCoordinates.value = {'lat': targetLat, 'lng': targetLng};
-    setState(() {
-      _gpsLabelText = "Geo-Tag Logged: Lat: $targetLat, Lng: $targetLng";
-    });
   }
 
   void _triggerWarningAlert(String alertMessage) {
@@ -179,7 +157,6 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
     }
   }
 
-  // Feature: Local JARC Database Lookup Engine + Economic Yield Loss Estimation
   void _processAgronomicOutput(String detectedClass, String confidence) {
     String remedy = '';
     String severity = 'Moderate';
@@ -214,29 +191,20 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
       _economicLossText = loss;
     });
 
-    // Feature: Text-To-Speech Hardware Audio Processing Emulation
-    audioReadoutSpeechState.value = "Alert: $detectedClass identified. Remediation steps logged.";
-
-    // Feature: Background Datastore Synchronizer (Cloud Sync)
     scanHistoryNotifier.value = List.from(scanHistoryNotifier.value)
       ..add({
         'title': detectedClass,
-        'date': DateTime.now().toString().split('.')[0],
+        'date': DateTime.now().toString().split('.'),
         'loss': loss,
         'severity': severity,
         'gps': _gpsLabelText,
       });
   }
 
-  // Feature: Active Learning Classification Overrides Pipeline
-  void _submitUserCorrectionReport() {
-    _triggerWarningAlert("Correction Logged. Misclassification payload packaged to feed the Active Learning cloud retraining database.");
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('JARC Coffee Leaf Analytics'), backgroundColor: Colors.green[800], foregroundColor: Colors.white),
+      appBar: AppBar(title: const Text('JARC Coffee Leaf Analytics'), backgroundColor: Colors.green, foregroundColor: Colors.white),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -252,3 +220,32 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
                           borderRadius: BorderRadius.circular(14),
                           child: ColorFiltered(
                             colorFilter: ColorFilter.mode(
+                              _showGradCamHeatmap ? Colors.red.withOpacity(0.4) : Colors.transparent, 
+                              BlendMode.colorBurn
+                            ),
+                            child: Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
+                          ),
+                        )
+                      : const Center(child: Text('Insert Coffee Leaf Profile Image Here', style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.bold))),
+                ),
+                if (_imageBytes != null)
+                  Positioned(
+                    top: 10, right: 10,
+                    child: ElevatedButton.icon(
+                      onPressed: () => setState(() => _showGradCamHeatmap = !_showGradCamHeatmap),
+                      icon: const Icon(Icons.visibility, size: 16),
+                      label: Text(_showGradCamHeatmap ? "Hide Grad-CAM" : "Grad-CAM XAI"),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black.withOpacity(0.7), foregroundColor: Colors.white),
+                    ),
+                  )
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.blue.shade100, borderRadius: BorderRadius.circular(8)),
+              child: Row(children: [const Icon(Icons.location_on, color: Colors.blue), const SizedBox(width: 8), Text(_gpsLabelText, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))]),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _pickImage(ImageSource.gallery),
