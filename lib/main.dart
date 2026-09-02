@@ -75,19 +75,10 @@ class CoffeeScannerScreen extends StatefulWidget {
   const CoffeeScannerScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const CoffeeScannerContent();
-  }
+  State<CoffeeScannerScreen> createState() => _CoffeeScannerScreenState();
 }
 
-class CoffeeScannerContent extends StatefulWidget {
-  const CoffeeScannerContent({super.key});
-
-  @override
-  State<CoffeeScannerContent> createState() => _CoffeeScannerContentState();
-}
-
-class _CoffeeScannerContentState extends State<CoffeeScannerContent> {
+class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
   Uint8List? _imageBytes;
   bool _isLoading = false;
   bool _showGradCamHeatmap = false;
@@ -229,7 +220,7 @@ class _CoffeeScannerContentState extends State<CoffeeScannerContent> {
                           borderRadius: BorderRadius.circular(14),
                           child: ColorFiltered(
                             colorFilter: ColorFilter.mode(
-                              _showGradCamHeatmap ? Colors.red.withAlpha(100) : Colors.transparent, 
+                              _showGradCamHeatmap ? Colors.red.withOpacity(0.4) : Colors.transparent, 
                               BlendMode.colorBurn
                             ),
                             child: Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
@@ -252,7 +243,9 @@ class _CoffeeScannerContentState extends State<CoffeeScannerContent> {
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.blue.withAlpha(40), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: Colors.blue.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
               child: Row(children: [const Icon(Icons.location_on, color: Colors.blue), const SizedBox(width: 8), Text(_gpsLabelText, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))]),
             ),
-
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _pickImage(ImageSource.gallery),
