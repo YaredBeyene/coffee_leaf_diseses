@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import imagepython maim.py
+from tensorflow.keras.preprocessing import image
 import numpy as np
 import io
 from PIL import Image
@@ -71,5 +71,5 @@ async def predict(file: UploadFile = File(...)):
 
 if __name__ == '__main__':
     print("Starting Coffee Disease Prediction Server...")
-    uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
     

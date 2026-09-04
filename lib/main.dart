@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,60 +8,25 @@ void main() {
   runApp(const CoffeeDiseaseApp());
 }
 
-final ValueNotifier<List<Map<String, String>>> scanHistoryNotifier = ValueNotifier([]);
-
 class CoffeeDiseaseApp extends StatelessWidget {
   const CoffeeDiseaseApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Coffee Leaf Analytics Platform',
-      theme: ThemeData(primarySwatch: Colors.green),
-      home: const MainNavigationScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
-  @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
-}
-
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _currentIndex = 0;
-  final List<Widget> _screens = [
-    const CoffeeScannerScreen(),
-    const CoffeeChatbotScreen(),
-    const HistoryScreen(),
-    const WeatherTipsScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.center_focus_strong), label: 'Detector'),
-          BottomNavigationBarItem(icon: Icon(Icons.psychology), label: 'Expert Chat'),
-          BottomNavigationBarItem(icon: Icon(Icons.history_toggle_off), label: 'Outbreak Log'),
-          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'GIS Dashboard'),
-        ],
+      title: 'Coffee Leaf Disease Detector',
+      theme: ThemeData(
+        primarySwatch: Colors.brown,
       ),
+      home: const CoffeeScannerScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
 class CoffeeScannerScreen extends StatefulWidget {
   const CoffeeScannerScreen({super.key});
+
   @override
   State<CoffeeScannerScreen> createState() => _CoffeeScannerScreenState();
 }
@@ -69,169 +34,255 @@ class CoffeeScannerScreen extends StatefulWidget {
 class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
   Uint8List? _imageBytes;
   bool _isLoading = false;
-  bool _showGradCamHeatmap = false;
-  String _resultText = '';
-  String _remedyText = '';
-  String _severityText = '';
-  String _economicLossText = '';
-  String _gpsLabelText = 'GPS Data Not Tracked';
+  String _predictionResult = '';
+  String _confidenceResult = '';
 
+  // Backend API URL (ተስተካክሎ ገብቷል)
+  final String apiUrl = 'https://opulent-space-adventure-r4wxjw64599pc5pwr-8000.app.github.dev/predict';
+
+  // Pick image from camera or gallery
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800);
+    final pickedFile = await picker.pickImage(
+      source: source,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
       setState(() {
         _imageBytes = bytes;
-        _showGradCamHeatmap = false;
-        _resultText = '';
-        _remedyText = '';
-        _severityText = '';
-        _economicLossText = '';
-        _gpsLabelText = "Geo-Tag Logged: Lat: 9.6833, Lng: 39.5333 (Debre Berhan Area)";
+        _predictionResult = '';
+        _confidenceResult = '';
       });
-      _sendImageToBackend(bytes);
+      await _sendImageToBackend(bytes, pickedFile.name);
     }
   }
 
-  Future<void> _sendImageToBackend(Uint8List bytes) async {
+  // Send image to backend and get prediction
+  Future<void> _sendImageToBackend(Uint8List bytes, String fileName) async {
     setState(() => _isLoading = true);
+
     try {
-      var uri = Uri.parse('https://github.dev');
+      var uri = Uri.parse(apiUrl);
       var request = http.MultipartRequest('POST', uri);
-      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: 'coffee_leaf.jpg'));
-      var response = await request.send();
+      
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file', 
+          bytes, 
+          filename: fileName.isNotEmpty ? fileName : 'coffee_leaf.jpg',
+        ),
+      );
+      
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
       if (response.statusCode == 200) {
-        var responseData = await response.stream.bytesToString();
-        var jsonResult = json.decode(responseData);
-        _processAgronomicOutput(jsonResult['class'] ?? 'Rust', jsonResult['confidence']?.toString() ?? '96.5');
+        var responseData = json.decode(response.body);
+        
+        String detectedClass = responseData['class'] ?? responseData['prediction'] ?? 'Not Found';
+        
+        var confidenceRaw = responseData['confidence'] ?? responseData['probability'] ?? 0.0;
+        String confidenceStr = '';
+        if (confidenceRaw is double || confidenceRaw is int) {
+          double val = confidenceRaw <= 1.0 ? confidenceRaw * 100 : confidenceRaw;
+          confidenceStr = '${val.toStringAsFixed(1)}%';
+        } else {
+          confidenceStr = confidenceRaw.toString();
+        }
+
+        setState(() {
+          _predictionResult = detectedClass;
+          _confidenceResult = confidenceStr;
+        });
       } else {
-        _processAgronomicOutput('Rust', '97.2');
+        setState(() {
+          _predictionResult = 'Server Error (Status: ${response.statusCode})';
+          _confidenceResult = '0%';
+        });
       }
     } catch (e) {
-      _processAgronomicOutput('Rust', '95.8');
+      setState(() {
+        _predictionResult = 'Connection Error Occurred';
+        _confidenceResult = '0%';
+      });
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  void _processAgronomicOutput(String detectedClass, String confidence) {
-    String remedy = '';
-    String severity = 'Moderate';
-    String loss = 'Estimated Yield Loss: ~30%';
-
-    if (detectedClass.toLowerCase().contains('rust')) {
-      remedy = 'Jimma Agricultural Research Center (JARC) Guideline: Apply copper-based systemic fungicides instantly. Prune structural canopy layers to drop field humidity and prioritize certified robust Arabica variants (e.g., JARC 741).';
-      severity = 'High Severity';
-    } else {
-      remedy = 'Maintain routine field sanitation protocols and check environmental moisture levels regularly.';
-      severity = 'Clear / Healthy';
-      loss = 'Estimated Yield Loss: 0%';
-    }
-
-    setState(() {
-      _resultText = "Pathogen: $detectedClass ($confidence%)";
-      _remedyText = remedy;
-      _severityText = "Severity Level: $severity";
-      _economicLossText = loss;
-    });
-
-    scanHistoryNotifier.value = List.from(scanHistoryNotifier.value)
-      ..add({'title': detectedClass, 'loss': loss, 'severity': severity, 'gps': _gpsLabelText});
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('JARC Coffee Leaf Analytics'), backgroundColor: Colors.green, foregroundColor: Colors.white),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Stack(
-              children: [
-                Container(
-                  height: 240,
-                  decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.green, width: 2), borderRadius: BorderRadius.circular(16)),
-                  child: _imageBytes != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: _showGradCamHeatmap
-                              ? ColorFiltered(colorFilter: const ColorFilter.mode(Colors.red, BlendMode.colorBurn), child: Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity))
-                              : Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
-                        )
-                      : const Center(child: Text('Insert Coffee Leaf Profile Image Here', style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.bold))),
+      appBar: AppBar(
+        title: const Text('Coffee Leaf Disease Detector'),
+        backgroundColor: const Color(0xFF3E2723),
+        foregroundColor: Colors.white,
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: const NetworkImage(
+              'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=1000&auto=format&fit=crop',
+            ),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.6),
+              BlendMode.darken,
+            ),
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Image Preview Box
+              Container(
+                height: 280,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  border: Border.all(color: const Color(0xFF8D6E63), width: 2),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                if (_imageBytes != null)
-                  Positioned(
-                    top: 10, right: 10,
-                    child: ElevatedButton.icon(
-                      onPressed: () => setState(() => _showGradCamHeatmap = !_showGradCamHeatmap),
-                      icon: const Icon(Icons.visibility, size: 16),
-                      label: Text(_showGradCamHeatmap ? "Hide Grad-CAM" : "Grad-CAM XAI"),
-                    ),
-                  )
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-              child: Row(children: [const Icon(Icons.location_on, color: Colors.blue), const SizedBox(width: 8), Text(_gpsLabelText, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue))]),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => _pickImage(ImageSource.gallery),
-              icon: const Icon(Icons.photo_library, color: Colors.white),
-              label: const Text('Capture / Process Leaf Frame', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 14)),
-            ),
-            if (_isLoading) ...[const SizedBox(height: 25), const Center(child: CircularProgressIndicator())],
-            if (_resultText.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Card(
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.between,
-                        children: [
-                          Expanded(child: Text(_resultText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))),
-                          IconButton(icon: const Icon(Icons.volume_up, color: Colors.blue), onPressed: () {})
-                        ],
+                child: _imageBytes != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.memory(_imageBytes!, fit: BoxFit.cover, width: double.infinity),
+                      )
+                    : const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.coffee, size: 70, color: Color(0xFF6F4E37)),
+                            SizedBox(height: 10),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Text(
+                                'Take a photo or select a coffee leaf from gallery',
+                                style: TextStyle(fontSize: 15, color: Color(0xFF4A3525), fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(_severityText, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.orange)),
-                      Text(_economicLossText, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red)),
-                      const Divider(height: 20),
-                      const Text('Actionable Treatment Framework (JARC Base):', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                      const SizedBox(height: 5),
-                      Text(_remedyText, style: const TextStyle(fontSize: 14)),
+              ),
+              const SizedBox(height: 24),
+
+              // Camera and Gallery Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : () => _pickImage(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt, color: Colors.white),
+                      label: const Text('Camera', style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6F4E37),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : () => _pickImage(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_library, color: Colors.white),
+                      label: const Text('Gallery', style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8D6E63),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              // Loading Indicator
+              if (_isLoading)
+                const Center(
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(color: Colors.white),
+                      SizedBox(height: 12),
+                      Text(
+                        'Processing Prediction...',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
                     ],
                   ),
                 ),
-              ),
+
+              // Result Display Card
+              if (_predictionResult.isNotEmpty && !_isLoading)
+                Card(
+                  elevation: 6,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  color: Colors.white.withOpacity(0.95),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Diagnosis Result',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF3E2723),
+                          ),
+                        ),
+                        const Divider(thickness: 1.5, color: Color(0xFF8D6E63)),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.eco, color: Color(0xFFD32F2F), size: 28),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Disease: $_predictionResult',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.verified, color: Color(0xFF1976D2), size: 28),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Confidence: $_confidenceResult',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
-
-class CoffeeChatbotScreen extends StatelessWidget {
-  const CoffeeChatbotScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Expert Consultation Desk'), backgroundColor: Colors.green, foregroundColor: Colors.white),
-      body: const Center(child: Text('Connected to Coffee Extension Support Desk.', style: TextStyle(fontSize: 16))),
-    );
-  }
-}
-
-
