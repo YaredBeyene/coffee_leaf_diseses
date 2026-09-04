@@ -9,10 +9,10 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
+          java-version: '11'
       - run: flutter pub get
       - run: flutter build apk --split-per-abi
       - uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/*.apk
-
