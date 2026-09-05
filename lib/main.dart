@@ -37,7 +37,7 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
   String _predictionResult = '';
   String _confidenceResult = '';
 
-  // Backend API URL (ተስተካክሎ ገብቷል)
+  // Backend API URL (አዲሱ የ Codespaces Public URL)
   final String apiUrl = 'https://opulent-space-adventure-r4wxjw64599pc5pwr-8000.app.github.dev/predict';
 
   // Pick image from camera or gallery
@@ -69,6 +69,10 @@ class _CoffeeScannerScreenState extends State<CoffeeScannerScreen> {
       var uri = Uri.parse(apiUrl);
       var request = http.MultipartRequest('POST', uri);
       
+      // 1. የጊትሃብ ሴኩሪቲ ፕሮክሲን (GitHub Proxy) ለማለፍ የሚረዳው ሄደር
+      request.headers['X-Requested-With'] = 'XMLHttpRequest';
+      
+      // 2. ፎቶውን ማያያዝ
       request.files.add(
         http.MultipartFile.fromBytes(
           'file', 
