@@ -1,0 +1,44 @@
+name: Coffee Leaf Disease Offline APK Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repository code
+      - name: Checkout repository code
+        uses: actions/checkout@v3
+
+      # 2. Set up Java Development Kit (JDK) for Android Build
+      - name: Set up Java Development Kit (JDK)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Set up Flutter Environment on GitHub Server
+      - name: Set up Flutter Environment
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.13.0'
+
+      # 4. Install project dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Build Split Multi-Architecture Release APKs (arm64, v7a, x86)
+      - name: Build Split Multi-Architecture Release APKs
+        run: flutter build apk --release --split-per-abi
+
+      # 6. Upload Generated APKs to GitHub Actions Artifacts
+      - name: Upload Generated APKs to GitHub Actions
+        uses: actions/upload-artifact@v3
+        with:
+          name: coffee-leaf-release-apks
+          path: build/app/outputs/flutter-apk/*-release.apk
