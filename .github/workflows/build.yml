@@ -1,6 +1,7 @@
 name: Coffee Leaf Disease Offline APK Build
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
@@ -36,4 +37,3 @@ jobs:
         with:
           name: coffee-leaf-release-apks
           path: build/app/outputs/flutter-apk/*-release.apk
-
