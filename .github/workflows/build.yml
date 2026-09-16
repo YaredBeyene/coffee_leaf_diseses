@@ -12,34 +12,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout ኮዱን ወደ v4 አሳድገነዋል
       - name: Checkout repository code
         uses: actions/checkout@v4
 
-      # 2. Set up Java ን ወደ v4 አሳድገነዋል
       - name: Set up Java Development Kit (JDK)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '11' # ከፍሉተር 3.7 ጋር ፍጹም የሚስማማው JDK 11 ነው
 
-      # 3. Set up Flutter
       - name: Set up Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.0'
+          flutter-version: '3.7.0' # ካንተ የGradle ፋይሎች ጋር የሚስማማው ስሪት
 
-      # 4. Install project dependencies
       - name: Install dependencies
         run: flutter pub get
 
-      # 5. Build Split Multi-Architecture Release APKs
       - name: Build Split Multi-Architecture Release APKs
         run: flutter build apk --release --split-per-abi
 
-      # 6. የፋይል ማከማቻውን (Upload) ወደ v4 አሳድገነዋል (ይህ ነው ዋናው ማስተካከያ!)
       - name: Upload Generated APKs to GitHub Actions
         uses: actions/upload-artifact@v4
         with:
           name: coffee-leaf-release-apks
           path: build/app/outputs/flutter-apk/*-release.apk
+
